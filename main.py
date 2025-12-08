@@ -2,12 +2,19 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import List
 import pandas as pd
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(title="Production Anomaly Detection API", version="1.0")
 
-# =========================
-# INPUT SCHEMA (FORM UI)
-# =========================
+# === FIX CORS ===
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 class ProductionInput(BaseModel):
     date: str = Field(..., example="2025-12-06")
     unit_id: str = Field(..., example="EXC-001")
@@ -22,9 +29,6 @@ class ProductionInput(BaseModel):
     fuel_consumption_l: float = Field(..., ge=0)
 
 
-# =========================
-# OUTPUT SCHEMA
-# =========================
 class AnomalyOutput(BaseModel):
     date: str
     type_anomaly: str
@@ -32,45 +36,22 @@ class AnomalyOutput(BaseModel):
     description: str
 
 
-# =========================
-# HEALTH CHECK
-# =========================
 @app.get("/")
 def home():
     return {"status": "Anomaly API is running ✅"}
 
 
-# =========================
-# MAIN ANOMALY DETECTION
-# =========================
 @app.post("/detect-anomaly", response_model=List[AnomalyOutput])
 def detect_anomaly(data: ProductionInput):
     try:
-        # =========================
-        # CREATE DATAFRAME
-        # =========================
         feature = pd.DataFrame([data.model_dump()])
 
-        # =========================
-        # FEATURE ENGINEERING
-        # =========================
         feature["production_drop_pct"] = (
             (feature["actual_tons"] - feature["target_tons"]) / feature["target_tons"]
         )
 
-        # =========================
-        # INIT FLAGS
-        # =========================
-        feature["production_anomaly"] = 0
-        feature["breakdown_anomaly"] = 0
-        feature["rainfall_anomaly"] = 0
-        feature["fuel_anomaly"] = 0
-
         anomalies = []
 
-        # =========================
-        # RULE 1: PRODUKSI TURUN > 30%
-        # =========================
         if feature.loc[0, "production_drop_pct"] < -0.3:
             anomalies.append({
                 "date": data.date,
@@ -79,13 +60,7 @@ def detect_anomaly(data: ProductionInput):
                 "description": "Produksi turun lebih dari 30% dari target"
             })
 
-        # =========================
-        # RULE 2: BREAKDOWN TINGGI + UTILIZATION RENDAH
-        # =========================
-        if (
-            feature.loc[0, "breakdown_hours"] > 4 and
-            feature.loc[0, "utilization_percent"] < 50
-        ):
+        if feature.loc[0, "breakdown_hours"] > 4 and feature.loc[0, "utilization_percent"] < 50:
             anomalies.append({
                 "date": data.date,
                 "type_anomaly": "Breakdown Anomaly",
@@ -93,13 +68,7 @@ def detect_anomaly(data: ProductionInput):
                 "description": "Jam breakdown tinggi tapi utilisasi rendah"
             })
 
-        # =========================
-        # RULE 3: HUJAN TINGGI + PRODUKSI TIDAK REALISTIS
-        # =========================
-        if (
-            feature.loc[0, "precip_mm"] > 40 and
-            feature.loc[0, "actual_tons"] > feature.loc[0, "target_tons"] * 1.1
-        ):
+        if feature.loc[0, "precip_mm"] > 40 and feature.loc[0, "actual_tons"] > feature.loc[0, "target_tons"] * 1.1:
             anomalies.append({
                 "date": data.date,
                 "type_anomaly": "Rainfall Anomaly",
@@ -107,10 +76,7 @@ def detect_anomaly(data: ProductionInput):
                 "description": "Curah hujan tinggi namun produksi sangat tinggi (tidak realistis)"
             })
 
-        # =========================
-        # RULE 4: FUEL CONSUMPTION SPIKE
-        # =========================
-        FUEL_THRESHOLD_DEFAULT = 300  # Bisa kamu sesuaikan dari data historis
+        FUEL_THRESHOLD_DEFAULT = 300
 
         if feature.loc[0, "fuel_consumption_l"] > FUEL_THRESHOLD_DEFAULT:
             anomalies.append({
@@ -120,9 +86,6 @@ def detect_anomaly(data: ProductionInput):
                 "description": "Konsumsi BBM melebihi batas wajar"
             })
 
-        # =========================
-        # JIKA TIDAK ADA ANOMALI
-        # =========================
         if len(anomalies) == 0:
             return [{
                 "date": data.date,
