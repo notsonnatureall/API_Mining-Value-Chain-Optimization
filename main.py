@@ -22,7 +22,6 @@ def home():
 @app.post("/detect-anomaly", response_model=List[AnomalyOutput])
 def predict(request: ProductionInput):
     result = detect_anomaly(request)
-    return{
-        result
-    }
+    return result
     
+
