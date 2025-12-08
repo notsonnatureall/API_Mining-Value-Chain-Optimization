@@ -4,7 +4,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from typing import List
 from report_anomaly import detect_anomaly, ProductionInput,AnomalyOutput
-from actual_tons import tons_predict, generate_weather_system, ForecastOutput, ForecastRequest
+from actual_tons import tons_predict, generate_weather_system, ForecastOutput, ForecastRequest, feature_engineering_tons
 
 app = FastAPI(title="Production Anomaly Detection API", version="1.0")
 
@@ -31,7 +31,7 @@ def predict(request: ProductionInput):
 # =========================
 # MAIN ACTUAL TONS PREDICTION
 # =========================
-@app.post("/predict-tons", response_model=List[ForecastOutput])
+@app.post("/predict-tons")
 def predict_tons(request: ForecastRequest):
     result = tons_predict(request)
     return {

@@ -3,13 +3,33 @@ import pandas as pd
 import numpy as np
 import joblib
 import random
+import sys
+import __main__
 
 from xgboost import XGBRegressor
 from pydantic import BaseModel, Field
 from fastapi import FastAPI, HTTPException
 from datetime import date
+from sklearn.base import BaseEstimator, TransformerMixin
 
-model_actual_tons = joblib.load("model\haul_prediction_pipeline.pkl")
+class feature_engineering_tons(BaseEstimator, TransformerMixin):
+  def __init__(self) -> None:
+      super().__init__()
+  
+  def fit(self, X, y=None):
+    return self
+
+  def transform(self, X):
+    X['broken_ratio'] = X['breakdown_hours'] / X['availability_hours']
+    X['fuel_consumption_ratio'] = X['fuel_consumption_l'] / X['target_tons']
+    X['rainy heavy flag'] = np.where(X['precip_mm'] > 30, 1, 0)
+    X['wind_high_flag'] = np.where(X['wind_speed_kmh'] > 20, 1, 0)
+    return X
+  
+if "feature_engineering_tons" not in sys.modules['__main__'].__dict__:
+    sys.modules['__main__'].feature_engineering_tons = feature_engineering_tons
+
+model_actual_tons = joblib.load("model/haul_prediction_pipeline.pkl")
 
 # =========================
 # INPUT SCHEMA
