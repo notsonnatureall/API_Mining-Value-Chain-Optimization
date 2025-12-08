@@ -96,7 +96,7 @@ def detect_anomaly(data: ProductionInput):
         # =========================
         # RULE 4: FUEL CONSUMPTION SPIKE
         # =========================
-        FUEL_THRESHOLD_DEFAULT = 300  # Bisa kamu sesuaikan dari data historis
+        FUEL_THRESHOLD_DEFAULT = 300  
 
         if feature.loc[0, "fuel_consumption_l"] > FUEL_THRESHOLD_DEFAULT:
             anomalies.append({
