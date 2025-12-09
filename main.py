@@ -5,9 +5,9 @@ from pydantic import BaseModel, Field
 from typing import List
 from report_anomaly import detect_anomaly, ProductionInput,AnomalyOutput
 from actual_tons import tons_predict, generate_weather_system, ForecastOutput, ForecastRequest, feature_engineering_tons
+from cycle_time import predict_util, generate_weather_system, UtilRequest, UtilOutput
 
 app = FastAPI(title="Production Anomaly Detection API", version="1.0")
-
 
 # =========================
 # HEALTH CHECK
@@ -16,9 +16,8 @@ app = FastAPI(title="Production Anomaly Detection API", version="1.0")
 def home():
     return {"status": "Anomaly API is running ✅"}
 
-
 # =========================
-# MAIN ANOMALY DETECTION
+# ANOMALY DETECTION
 # =========================
 @app.post("/detect-anomaly", response_model=List[AnomalyOutput])
 def predict(request: ProductionInput):
@@ -29,11 +28,22 @@ def predict(request: ProductionInput):
     }
     
 # =========================
-# MAIN ACTUAL TONS PREDICTION
+# ACTUAL TONS PREDICTION
 # =========================
 @app.post("/predict-tons")
-def predict_tons(request: ForecastRequest):
+def predict_tons_api(request: ForecastRequest):
     result = tons_predict(request)
+    return {
+        "prediction_result" : result,
+        "ai_recommendation" : "loremipsum del torot"
+    }
+
+# =========================
+#  FLEET UTILIZATION PREDICTION
+# =========================
+@app.post("/predict-utilization")
+def predict_util_api(request: UtilRequest):
+    result = predict_util(request)
     return {
         "prediction_result" : result,
         "ai_recommendation" : "loremipsum del torot"
