@@ -1,28 +1,73 @@
-import pandas as pd 
+import pandas as pd
 import joblib
 import os
-
-from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from datetime import datetime
 
-model_sales = joblib.load("model/delivery_risk_pipeline.pkl")
-model_capacity = joblib.load("model/system_capacity.pkl")
+# --- LOAD MODEL ---
+# Pastikan path folder "model/" sesuai dengan struktur folder Anda
+try:
+    model_path = "model/delivery_risk_pipeline.pkl" 
+    capacity_path = "model/system_capacity.pkl"
+    
+    if os.path.exists(model_path):
+        model_sales = joblib.load(model_path)
+    else:
+        model_sales = None
+        print(f"Warning: {model_path} tidak ditemukan.")
 
+    if os.path.exists(capacity_path):
+        model_capacity = joblib.load(capacity_path)
+    else:
+        model_capacity = 42000.0 # Default fallback
+        print("Warning: Kapasitas sistem tidak ditemukan, menggunakan default.")
+
+except Exception as e:
+    print(f"Error loading model: {e}")
+    model_sales = None
+    model_capacity = 42000.0
+
+# --- DATA STRUCTURE ---
 class ContractRequest(BaseModel):
     customer_id: str        # Contoh: "D"
     loading_port: str       # Contoh: "Port North"
     required_tons: int      # Contoh: 25000
-    deadline_date: str
+    deadline_date: str      # Contoh: "2025-12-12"
 
-def predict_sales_risk(data):
-    input_data = pd.DataFrame([{
+# --- PREDICTION LOGIC ---
+def predict_sales_risk(data: ContractRequest):
+    if not model_sales:
+        return {"error": "Model belum siap"}
+
+    # 1. SIAPKAN DATA UNTUK AI (Sesuai Training di Notebook)
+    # Fitur: ['customer', 'loading_port', 'required_tons', 'weekly_capacity_est']
+    input_df = pd.DataFrame([{
         'customer': data.customer_id,
         'loading_port': data.loading_port,
         'required_tons': data.required_tons,
         'weekly_capacity_est': model_capacity
     }])
 
-    prob_delay = model_sales.predict_proba(input_data)[0][1]
-    return prob_delay
+    # 2. PREDIKSI AI (Probabilitas Delay berdasarkan Pola)
+    try:
+        prob_delay = model_sales.predict_proba(input_df)[0][1]
+    except Exception as e:
+        return 0.0, "Error pada model AI"
 
+    # 3. LOGIKA TAMBAHAN: CEK DEADLINE (Manual Rule)
+    # Karena model di notebook tidak dilatih pakai 'lead_time', kita hitung manual
+    try:
+        deadline = datetime.strptime(data.deadline_date, "%Y-%m-%d")
+        today = datetime.now()
+        days_left = (deadline - today).days
+        
+        # Override risiko jika waktu terlalu mepet (< 3 hari)
+        if days_left < 3:
+            prob_delay = max(prob_delay, 0.99) # Paksa risiko jadi 99%
+        elif days_left < 7:
+            prob_delay = max(prob_delay, 0.85) # Paksa risiko jadi 85%
+            
+    except ValueError:
+        days_left = -1 # Format tanggal salah
+
+    return float(prob_delay), days_left
