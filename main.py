@@ -6,6 +6,7 @@ from typing import List
 from report_anomaly import detect_anomaly, ProductionInput,AnomalyOutput
 from actual_tons import tons_predict, generate_weather_system, ForecastOutput, ForecastRequest, feature_engineering_tons
 from cycle_time import predict_util, generate_weather_system, UtilRequest, UtilOutput
+from sales_risk import predict_sales_risk, ContractRequest
 
 app = FastAPI(title="Production Anomaly Detection API", version="1.0")
 
@@ -47,4 +48,15 @@ def predict_util_api(request: UtilRequest):
     return {
         "prediction_result" : result,
         "ai_recommendation" : "loremipsum del torot"
+    }
+
+# =========================
+#  SALES RISK PREDICTION
+# =========================
+@app.post("/predict-sales-risk")
+def predict_sales_risk_api(request: ContractRequest):
+    result = predict_sales_risk(request)
+    return{
+        "prediction_result" : result,
+        "ai_recommendtaion" : "loremipsum del torot"
     }
