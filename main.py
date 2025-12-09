@@ -55,8 +55,25 @@ def predict_util_api(request: UtilRequest):
 # =========================
 @app.post("/predict-sales-risk")
 def predict_sales_risk_api(request: ContractRequest):
-    result = predict_sales_risk(request)
-    return{
-        "prediction_result" : result,
-        "ai_recommendtaion" : "loremipsum del torot"
+    probability, days_left = predict_sales_risk(request)
+    if probability > 0.7:
+        status = "CRITICAL 🔴"
+        rec = "Tolak kontrak atau negosiasi ulang deadline segera."
+    elif probability > 0.4:
+        status = "MODERATE 🟡"
+        rec = "Pantau produksi ketat, siapkan armada cadangan."
+    else:
+        status = "SAFE 🟢"
+        rec = "Kontrak aman untuk diproses."
+
+    if days_left < 0:
+        rec = "Tanggal deadline tidak valid atau sudah lewat."
+
+    return {
+        "prediction_result": {
+            "delay_probability": round(probability, 4),
+            "risk_status": status,
+            "days_until_deadline": days_left
+        },
+        "ai_recommendation": rec
     }
