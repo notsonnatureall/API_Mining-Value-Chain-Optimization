@@ -8,6 +8,7 @@ from actual_tons import tons_predict, generate_weather_system, ForecastOutput, F
 from cycle_time import predict_util, generate_weather_system, UtilRequest, UtilOutput
 from sales_risk import predict_sales_risk, ContractRequest
 from truck_inspection import predict_inspection, PredictionRequest
+from failure_machine import predict_from_simulated_data, simulate_single_point_per_machine
 
 app = FastAPI(title="Production Anomaly Detection API", version="1.0")
 
@@ -17,6 +18,12 @@ app = FastAPI(title="Production Anomaly Detection API", version="1.0")
 @app.get("/")
 def home():
     return {"status": "Anomaly API is running ✅"}
+
+@app.get('/failure-machine')
+def failure_machine():
+    df_sim = simulate_single_point_per_machine()
+    df_result = predict_from_simulated_data(df_sim)
+    return df_result
 
 # =========================
 # ANOMALY DETECTION
