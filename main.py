@@ -48,7 +48,7 @@ def predict_util_api(request: UtilRequest):
     result = predict_util(request)
     return {
         "prediction_result" : result,
-        "ai_recommendation" :    "loremipsum del toror"
+        "ai_recommendation" : "loremipsum del toror"
     }
 
 # =========================
