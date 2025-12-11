@@ -66,7 +66,7 @@ def simulate_single_point_per_machine(seed=None):
 
     return pd.DataFrame(rows)
 
-def predict_from_simulated_data(df_sim, model_path="model_failure.pkl"):
+def predict_from_simulated_data(df_sim):
     model = joblib.load(model_path)
 
     feature_cols = [
