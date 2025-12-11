@@ -48,7 +48,7 @@ def predict_util_api(request: UtilRequest):
     result = predict_util(request)
     return {
         "prediction_result" : result,
-        "ai_recommendation" : "loremipsum del torot"
+        "ai_recommendation" :    "loremipsum del toror"
     }
 
 # =========================
@@ -74,9 +74,10 @@ def predict_sales_risk_api(request: ContractRequest):
         "prediction_result": {
             "delay_probability": round(probability, 4),
             "risk_status": status,
-            "days_until_deadline": days_left
+            "days_until_deadline": days_left,
+            "description": rec
         },
-        "ai_recommendation": rec
+        "ai_recommendation": "Loremipsum del torot"
     }
 
 # =========================
@@ -87,6 +88,6 @@ def predict_sales_risk_api(request: ContractRequest):
 def predict(request: PredictionRequest):
     result = predict_inspection(request)
     return {
-        "status" : "success",
-        "prediction" : result
+        "prediction" : result,
+        "ai_recommendation" : "loremipsum del torot"
     }
