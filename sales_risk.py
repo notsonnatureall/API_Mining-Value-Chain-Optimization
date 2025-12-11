@@ -20,7 +20,6 @@ try:
         model_capacity = joblib.load(capacity_path)
     else:
         model_capacity = 42000.0 # Default fallback
-        print("Warning: Kapasitas sistem tidak ditemukan, menggunakan default.")
 
 except Exception as e:
     print(f"Error loading model: {e}")
@@ -34,13 +33,10 @@ class ContractRequest(BaseModel):
     required_tons: int      # Contoh: 25000
     deadline_date: str      # Contoh: "2025-12-12"
 
-# --- PREDICTION LOGIC ---
+
 def predict_sales_risk(data: ContractRequest):
     if not model_sales:
         return {"error": "Model belum siap"}
-
-    # 1. SIAPKAN DATA UNTUK AI (Sesuai Training di Notebook)
-    # Fitur: ['customer', 'loading_port', 'required_tons', 'weekly_capacity_est']
     input_df = pd.DataFrame([{
         'customer': data.customer_id,
         'loading_port': data.loading_port,
@@ -48,20 +44,15 @@ def predict_sales_risk(data: ContractRequest):
         'weekly_capacity_est': model_capacity
     }])
 
-    # 2. PREDIKSI AI (Probabilitas Delay berdasarkan Pola)
     try:
         prob_delay = model_sales.predict_proba(input_df)[0][1]
     except Exception as e:
         return 0.0, "Error pada model AI"
-
-    # 3. LOGIKA TAMBAHAN: CEK DEADLINE (Manual Rule)
-    # Karena model di notebook tidak dilatih pakai 'lead_time', kita hitung manual
     try:
         deadline = datetime.strptime(data.deadline_date, "%Y-%m-%d")
         today = datetime.now()
         days_left = (deadline - today).days
-        
-        # Override risiko jika waktu terlalu mepet (< 3 hari)
+
         if days_left < 3:
             prob_delay = max(prob_delay, 0.99) # Paksa risiko jadi 99%
         elif days_left < 7:

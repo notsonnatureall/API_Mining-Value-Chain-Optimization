@@ -7,6 +7,7 @@ from report_anomaly import detect_anomaly, ProductionInput,AnomalyOutput
 from actual_tons import tons_predict, generate_weather_system, ForecastOutput, ForecastRequest, feature_engineering_tons
 from cycle_time import predict_util, generate_weather_system, UtilRequest, UtilOutput
 from sales_risk import predict_sales_risk, ContractRequest
+from truck_inspection import predict_inspection, PredictionRequest
 
 app = FastAPI(title="Production Anomaly Detection API", version="1.0")
 
@@ -57,13 +58,13 @@ def predict_util_api(request: UtilRequest):
 def predict_sales_risk_api(request: ContractRequest):
     probability, days_left = predict_sales_risk(request)
     if probability > 0.7:
-        status = "CRITICAL 🔴"
+        status = "CRITICAL"
         rec = "Tolak kontrak atau negosiasi ulang deadline segera."
     elif probability > 0.4:
-        status = "MODERATE 🟡"
+        status = "MODERATE"
         rec = "Pantau produksi ketat, siapkan armada cadangan."
     else:
-        status = "SAFE 🟢"
+        status = "SAFE"
         rec = "Kontrak aman untuk diproses."
 
     if days_left < 0:
@@ -76,4 +77,16 @@ def predict_sales_risk_api(request: ContractRequest):
             "days_until_deadline": days_left
         },
         "ai_recommendation": rec
+    }
+
+# =========================
+#  SALES RISK PREDICTION
+# =========================
+
+@app.post("/predict-inspection")
+def predict(request: PredictionRequest):
+    result = predict_inspection(request)
+    return {
+        "status" : "success",
+        "prediction" : result
     }
