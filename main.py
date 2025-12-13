@@ -28,7 +28,7 @@ def failure_machine():
 # =========================
 # ANOMALY DETECTION
 # =========================
-@app.post("/detect-anomaly", response_model=List[AnomalyOutput])
+@app.post("/detect-anomaly")
 def predict(request: ProductionInput):
     result = detect_anomaly(request)
     return {
