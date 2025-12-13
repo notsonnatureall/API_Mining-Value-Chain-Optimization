@@ -1,6 +1,8 @@
 import pandas as pd
 import joblib
 import os
+import lightgbm
+
 from pydantic import BaseModel
 from datetime import datetime
 
