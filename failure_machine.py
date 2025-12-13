@@ -79,12 +79,18 @@ def predict_from_simulated_data(df_sim):
 
     X = df_sim[feature_cols]
 
-    df_sim["prediction"] = model.predict(X)
+    df_sim["prediction"] = model.predict(X).astype(int)
 
     try:
-        df_sim["prediction_prob"] = model.predict_proba(X)[:, 1]
+        df_sim["prediction_prob"] = model.predict_proba(X)[:, 1].astype(float)
     except:
-        pass
+        df_sim["prediction_prob"] = None
 
-    return df_sim["prediction_prob"]
+    return df_sim[[
+        "machine_id",
+        "machine_type",
+        "prediction",
+        "prediction_prob"
+    ]].to_dict(orient="records")
+
 
